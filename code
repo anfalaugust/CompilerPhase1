@@ -3,73 +3,89 @@
 #include <stdlib.h>
 #include <string.h>
 
-int line_num = 1;   // Line number tracker
-int col_num = 1;    // Column number tracker
+int line_num = 1;
+int col_num = 1;
 
 void print_error(const char *message) {
     printf("Error at line %d, column %d: %s\n", line_num, col_num, message);
     exit(1);
 }
-
 %}
 
 %%
 
-[ \t\n]+                { col_num += yyleng; }
-"--".*                  { /* Ignore comments */ }
-program                { printf("PROGRAM\n"); }
-beginprogram          { printf("BEGIN_PROGRAM\n"); }
-endprogram            { printf("END_PROGRAM\n"); }
-integer               { printf("INTEGER\n"); }
-array                 { printf("ARRAY\n"); }
-of                    { printf("OF\n"); }
-if                    { printf("IF\n"); }
-then                  { printf("THEN\n"); }
-endif                 { printf("ENDIF\n"); }
-else                  { printf("ELSE\n"); }
-while                 { printf("WHILE\n"); }
-loop                  { printf("LOOP\n"); }
-endloop               { printf("ENDLOOP\n"); }
-read                  { printf("READ\n"); }
-write                 { printf("WRITE\n"); }
-and                   { printf("AND\n"); }
-or                    { printf("OR\n"); }
-not                   { printf("NOT\n"); }
-true                  { printf("TRUE\n"); }
-false                 { printf("FALSE\n"); }
--                     { printf("SUB\n"); }
-\+                    { printf("ADD\n"); }
-\*                    { printf("MULT\n"); }
-\/                    { printf("DIV\n"); }
-=                     { printf("EQ\n"); }
-<>                    { printf("NEQ\n"); }
-<                     { printf("LT\n"); }
->                     { printf("GT\n"); }
-<=                    { printf("LTE\n"); }
->=                    { printf("GTE\n"); }
-;                     { printf("SEMICOLON\n"); }
-:                     { printf("COLON\n"); }
-,                     { printf("COMMA\n"); }
-\(                    { printf("L_PAREN\n"); }
-\)                    { printf("R_PAREN\n"); }
-:=                    { printf("ASSIGN\n"); }
+"--".*                  { col_num += yyleng; }      
+[ \t\r]+                { col_num += yyleng; }      
+\n                      { line_num++; col_num = 1; } 
 
-[a-zA-Z][a-zA-Z0-9_]*  { 
-                            if (strlen(yytext) > 8) {
-                                print_error("identifier exceeds 8 characters");
-                            }
-                            printf("IDENT %s\n", yytext);
+"program"               { printf("PROGRAM\n"); col_num += yyleng; }
+"beginprogram"          { printf("BEGIN_PROGRAM\n"); col_num += yyleng; }
+"endprogram"            { printf("END_PROGRAM\n"); col_num += yyleng; }
+"integer"               { printf("INTEGER\n"); col_num += yyleng; }
+"array"                 { printf("ARRAY\n"); col_num += yyleng; }
+"of"                    { printf("OF\n"); col_num += yyleng; }
+"if"                    { printf("IF\n"); col_num += yyleng; }
+"then"                  { printf("THEN\n"); col_num += yyleng; }
+"endif"                 { printf("ENDIF\n"); col_num += yyleng; }
+"else"                  { printf("ELSE\n"); col_num += yyleng; }
+"while"                 { printf("WHILE\n"); col_num += yyleng; }
+"loop"                  { printf("LOOP\n"); col_num += yyleng; }
+"endloop"               { printf("ENDLOOP\n"); col_num += yyleng; }
+"read"                  { printf("READ\n"); col_num += yyleng; }
+"write"                 { printf("WRITE\n"); col_num += yyleng; }
+"and"                   { printf("AND\n"); col_num += yyleng; }
+"or"                    { printf("OR\n"); col_num += yyleng; }
+"not"                   { printf("NOT\n"); col_num += yyleng; }
+"true"                  { printf("TRUE\n"); col_num += yyleng; }
+"false"                 { printf("FALSE\n"); col_num += yyleng; }
+
+";"                     { printf("SEMICOLON\n"); col_num += yyleng; }
+":"                     { printf("COLON\n"); col_num += yyleng; }
+","                     { printf("COMMA\n"); col_num += yyleng; }
+"\("                    { printf("L_PAREN\n"); col_num += yyleng; }
+"\)"                    { printf("R_PAREN\n"); col_num += yyleng; }
+":="                    { printf("ASSIGN\n"); col_num += yyleng; }
+"\+"                    { printf("ADD\n"); col_num += yyleng; }
+"-"                     { printf("SUB\n"); col_num += yyleng; }
+"\*"                    { printf("MULT\n"); col_num += yyleng; }
+"\/"                    { printf("DIV\n"); col_num += yyleng; }
+"="                     { printf("EQ\n");  col_num += yyleng; }
+"<>"                    { printf("NEQ\n"); col_num += yyleng; }
+"<="                    { printf("LTE\n"); col_num += yyleng; }
+">="                    { printf("GTE\n"); col_num += yyleng; }
+"<"                     { printf("LT\n");  col_num += yyleng; }
+">"                     { printf("GT\n");  col_num += yyleng; }
+
+[0-9]+                  { printf("NUMBER %s\n", yytext); col_num += yyleng; }
+
+[a-zA-Z][a-zA-Z0-9_]*   {
+                           int len = strlen(yytext);
+                           if (len > 8) {
+                               print_error("identifier exceeds 8 characters");
+                           }
+                           if (yytext[len-1] == '_') {
+                               print_error("identifier cannot end with underscore");
+                           }
+                           printf("IDENT %s\n", yytext);
+                           col_num += yyleng;
                         }
 
-[0-9]+                 { printf("NUMBER %s\n", yytext); }
-
-.                      { 
-                            print_error("unrecognized symbol"); 
+.                       { 
+                           char msg[100];
+                           sprintf(msg, "unrecognized symbol \"%s\"", yytext);
+                           print_error(msg); 
                         }
 
 %%
 
 int main() {
+    yylex();
+    return 0;
+}
+int yywrap(void) {
+    return 1;
+}
+
     yylex();  // Start the lexical analyzer
     return 0;
 }
