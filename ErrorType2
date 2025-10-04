@@ -2,7 +2,3 @@ program test;
 2n : integer;
 beginprogram
 endprogram
-program test;
-n_ : integer;
-beginprogram
-Endprogram
